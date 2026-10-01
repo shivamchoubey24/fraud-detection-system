@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+data/transactions.csv
+data/creditcard.csv
+.DS_Store
+
+# private prep notes
+NOTES.md

@@ -1,0 +1,329 @@
+{
+  "final_model": "XGBoost + focal loss",
+  "final_strategy": "focal",
+  "features": [
+    "amount",
+    "log_amount",
+    "hour",
+    "day_of_week",
+    "is_night",
+    "is_foreign",
+    "dist_from_home_km",
+    "card_age_days",
+    "cat_grocery",
+    "cat_fuel",
+    "cat_restaurant",
+    "cat_electronics",
+    "cat_travel",
+    "cat_online_retail",
+    "cat_entertainment",
+    "cat_utilities",
+    "is_new_device",
+    "card_txn_1h",
+    "card_txn_24h",
+    "secs_since_last",
+    "amount_ratio",
+    "device_n_cards",
+    "ip_n_cards",
+    "card_n_devices",
+    "component_log_size"
+  ],
+  "threshold": 0.09,
+  "review_cost": 5.0,
+  "split": {
+    "train": {
+      "rows": 36000,
+      "frauds": 309,
+      "fraud_rate_pct": 0.858
+    },
+    "val": {
+      "rows": 12000,
+      "frauds": 68,
+      "fraud_rate_pct": 0.567
+    },
+    "test": {
+      "rows": 12000,
+      "frauds": 103,
+      "fraud_rate_pct": 0.858
+    }
+  },
+  "seed": 42,
+  "focal": {
+    "gamma": 2.0,
+    "alpha": 0.75
+  },
+  "final_test": {
+    "threshold": 0.09,
+    "precision": 0.744,
+    "recall": 0.9029126213592233,
+    "f1": 0.8157894736842106,
+    "tp": 93,
+    "fp": 32,
+    "fn": 10,
+    "flagged": 125,
+    "cost": 1396.37,
+    "pr_auc": 0.9275328390636612,
+    "roc_auc": 0.996263233531175,
+    "pr_auc_ci95": [
+      0.8909794929288888,
+      0.9670006819602169
+    ],
+    "cost_without_model": 12581.67,
+    "cost_flag_everything": 59485.0,
+    "savings_pct": 88.90155281453099
+  },
+  "comparison": [
+    {
+      "model": "Logistic Regression (baseline)",
+      "family": "baseline",
+      "pr_auc": 0.7523292482691849,
+      "roc_auc": 0.9928635023433338,
+      "val_pr_auc": 0.6507428941838926,
+      "threshold": 0.04,
+      "precision": 0.3617021276595745,
+      "recall": 0.8252427184466019,
+      "f1": 0.5029585798816568,
+      "tp": 85,
+      "fp": 150,
+      "fn": 18,
+      "flagged": 235,
+      "cost": 2362.6099999999997
+    },
+    {
+      "model": "Random Forest",
+      "family": "baseline",
+      "pr_auc": 0.9249245041858897,
+      "roc_auc": 0.9973184069411314,
+      "val_pr_auc": 0.9348507619220775,
+      "threshold": 0.07,
+      "precision": 0.6785714285714286,
+      "recall": 0.9223300970873787,
+      "f1": 0.7818930041152263,
+      "tp": 95,
+      "fp": 45,
+      "fn": 8,
+      "flagged": 140,
+      "cost": 1123.88
+    },
+    {
+      "model": "XGBoost (no imbalance handling)",
+      "family": "imbalance",
+      "pr_auc": 0.924867040756758,
+      "roc_auc": 0.99583071852168,
+      "val_pr_auc": 0.9544677923258968,
+      "threshold": 0.115,
+      "precision": 0.7692307692307693,
+      "recall": 0.8737864077669902,
+      "f1": 0.8181818181818181,
+      "tp": 90,
+      "fp": 27,
+      "fn": 13,
+      "flagged": 117,
+      "cost": 1532.6799999999998
+    },
+    {
+      "model": "XGBoost + class weights",
+      "family": "imbalance",
+      "pr_auc": 0.9247669560720192,
+      "roc_auc": 0.9921486284785836,
+      "val_pr_auc": 0.9478598484562489,
+      "threshold": 0.035,
+      "precision": 0.6089743589743589,
+      "recall": 0.9223300970873787,
+      "f1": 0.7335907335907336,
+      "tp": 95,
+      "fp": 61,
+      "fn": 8,
+      "flagged": 156,
+      "cost": 977.92
+    },
+    {
+      "model": "XGBoost + SMOTE",
+      "family": "imbalance",
+      "pr_auc": 0.9276767822956964,
+      "roc_auc": 0.9958878431455757,
+      "val_pr_auc": 0.9421872807337053,
+      "threshold": 0.075,
+      "precision": 0.7627118644067796,
+      "recall": 0.8737864077669902,
+      "f1": 0.8144796380090498,
+      "tp": 90,
+      "fp": 28,
+      "fn": 13,
+      "flagged": 118,
+      "cost": 1947.08
+    },
+    {
+      "model": "XGBoost + focal loss",
+      "family": "imbalance",
+      "pr_auc": 0.9275328390636612,
+      "roc_auc": 0.996263233531175,
+      "val_pr_auc": 0.9579002555295916,
+      "threshold": 0.09,
+      "precision": 0.744,
+      "recall": 0.9029126213592233,
+      "f1": 0.8157894736842106,
+      "tp": 93,
+      "fp": 32,
+      "fn": 10,
+      "flagged": 125,
+      "cost": 1396.37
+    },
+    {
+      "model": "Isolation Forest (unsupervised)",
+      "family": "unsupervised",
+      "pr_auc": 0.42715186525899457,
+      "roc_auc": 0.9407111689248575,
+      "val_pr_auc": 0.40343873610275277,
+      "threshold": 0.055,
+      "precision": 0.19325153374233128,
+      "recall": 0.6116504854368932,
+      "f1": 0.2937062937062937,
+      "tp": 63,
+      "fp": 263,
+      "fn": 40,
+      "flagged": 326,
+      "cost": 2250.15
+    },
+    {
+      "model": "Autoencoder (unsupervised)",
+      "family": "unsupervised",
+      "pr_auc": 0.19409977499939657,
+      "roc_auc": 0.8655310835480268,
+      "val_pr_auc": 0.14645289726720886,
+      "threshold": 0.045,
+      "precision": 0.13274336283185842,
+      "recall": 0.4368932038834951,
+      "f1": 0.20361990950226244,
+      "tp": 45,
+      "fp": 294,
+      "fn": 58,
+      "flagged": 339,
+      "cost": 6942.1
+    },
+    {
+      "model": "Ablation: same model without graph features",
+      "family": "ablation",
+      "pr_auc": 0.7897054048743936,
+      "roc_auc": 0.9928757433341685,
+      "val_pr_auc": 0.836672216886549,
+      "threshold": 0.065,
+      "precision": 0.4772727272727273,
+      "recall": 0.8155339805825242,
+      "f1": 0.6021505376344086,
+      "tp": 84,
+      "fp": 92,
+      "fn": 19,
+      "flagged": 176,
+      "cost": 1729.96
+    }
+  ],
+  "importance": [
+    {
+      "feature": "is_new_device",
+      "mean_abs_shap": 0.7102090716362
+    },
+    {
+      "feature": "card_age_days",
+      "mean_abs_shap": 0.26882481575012207
+    },
+    {
+      "feature": "secs_since_last",
+      "mean_abs_shap": 0.23547668755054474
+    },
+    {
+      "feature": "amount",
+      "mean_abs_shap": 0.18242789804935455
+    },
+    {
+      "feature": "dist_from_home_km",
+      "mean_abs_shap": 0.1673762947320938
+    },
+    {
+      "feature": "device_n_cards",
+      "mean_abs_shap": 0.1650499403476715
+    },
+    {
+      "feature": "card_n_devices",
+      "mean_abs_shap": 0.13380609452724457
+    },
+    {
+      "feature": "amount_ratio",
+      "mean_abs_shap": 0.1148458868265152
+    },
+    {
+      "feature": "card_txn_24h",
+      "mean_abs_shap": 0.10776327550411224
+    },
+    {
+      "feature": "hour",
+      "mean_abs_shap": 0.09848567843437195
+    },
+    {
+      "feature": "component_log_size",
+      "mean_abs_shap": 0.09717515856027603
+    },
+    {
+      "feature": "cat_travel",
+      "mean_abs_shap": 0.09469301998615265
+    },
+    {
+      "feature": "ip_n_cards",
+      "mean_abs_shap": 0.04480261728167534
+    },
+    {
+      "feature": "cat_online_retail",
+      "mean_abs_shap": 0.04252016544342041
+    },
+    {
+      "feature": "log_amount",
+      "mean_abs_shap": 0.03909993916749954
+    },
+    {
+      "feature": "is_foreign",
+      "mean_abs_shap": 0.03401225432753563
+    },
+    {
+      "feature": "card_txn_1h",
+      "mean_abs_shap": 0.03226225823163986
+    },
+    {
+      "feature": "cat_electronics",
+      "mean_abs_shap": 0.030739402398467064
+    },
+    {
+      "feature": "cat_utilities",
+      "mean_abs_shap": 0.028987765312194824
+    },
+    {
+      "feature": "day_of_week",
+      "mean_abs_shap": 0.02501172386109829
+    },
+    {
+      "feature": "cat_entertainment",
+      "mean_abs_shap": 0.02278093993663788
+    },
+    {
+      "feature": "cat_restaurant",
+      "mean_abs_shap": 0.018526040017604828
+    },
+    {
+      "feature": "cat_grocery",
+      "mean_abs_shap": 0.016328131780028343
+    },
+    {
+      "feature": "cat_fuel",
+      "mean_abs_shap": 0.009181338362395763
+    },
+    {
+      "feature": "is_night",
+      "mean_abs_shap": 0.003390760160982609
+    }
+  ],
+  "data": {
+    "n_txn": 60000,
+    "fraud_rate_pct": 0.8,
+    "synthetic": true
+  },
+  "trained_seconds": 16.7
+}

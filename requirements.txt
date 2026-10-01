@@ -1,0 +1,12 @@
+# Runtime dependencies (tested with the versions in the comments; any recent version should work)
+numpy>=1.26            # tested 2.4
+pandas>=2.1            # tested 3.0
+scikit-learn>=1.3      # tested 1.8
+xgboost>=2.0           # tested 3.4
+imbalanced-learn>=0.12 # SMOTE
+networkx>=3.0          # fraud-ring graph analysis
+joblib>=1.3
+matplotlib>=3.7        # figures (training only)
+fastapi>=0.110
+uvicorn>=0.27
+pydantic>=2.0

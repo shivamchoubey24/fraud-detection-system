@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest>=8.0
+httpx>=0.27     # needed by FastAPI's TestClient
+shap>=0.44      # optional: official SHAP beeswarm plot + equivalence test

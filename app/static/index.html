@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fraud desk - real-time scoring with explanations</title>
+<style>
+:root{
+  --paper:#eceff4; --panel:#f8f9fb; --ink:#0f1b2d; --muted:#586577; --rule:#c7cfdb;
+  --fraud:#c0102b; --safe:#0d7762; --warn:#a8741a; --accent:#1c3f73; --mono:ui-monospace,"SF Mono",Consolas,Menlo,monospace;
+  --serif:Georgia,"Iowan Old Style","Times New Roman",serif; --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:12px}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans)}
+a,button,input,select{font:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px}
+header{background:var(--ink);color:#f3f5f8;padding:18px 0 16px}
+header .wrap{display:flex;flex-wrap:wrap;gap:12px 32px;align-items:baseline;justify-content:space-between}
+h1{margin:0;font:600 26px/1.15 var(--serif);letter-spacing:.2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px 20px;font:13px var(--mono);color:#b9c4d6}
+.chips b{color:#fff;font-weight:600}
+main{padding:22px 0 40px}
+.grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:28px}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}}
+section{border-top:3px solid var(--ink);padding-top:12px;margin-bottom:30px}
+section>h2{margin:0 0 4px;font:600 20px var(--serif)}
+.sub{color:var(--muted);margin:0 0 12px;max-width:68ch}
+.controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin:10px 0 14px}
+button{background:var(--ink);color:#fff;border:0;border-radius:3px;padding:7px 14px;cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+button:hover{opacity:.88}
+select,input[type=text],input[type=number]{border:1px solid var(--rule);background:#fff;border-radius:3px;padding:6px 8px;color:var(--ink);width:100%}
+label{font-size:13px;color:var(--muted);display:block}
+.tally{display:flex;flex-wrap:wrap;gap:6px 22px;font:13px var(--mono);padding:8px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin-bottom:6px}
+.tally span b{font-size:15px;color:var(--ink)}
+.tape-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th{font:600 12.5px var(--sans);color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid #dde3ec;font:13px var(--mono);white-space:nowrap}
+td.num,th.num{text-align:right}
+tbody#tape tr{cursor:pointer}
+tbody#tape tr:hover{background:#e3e9f2}
+tbody#tape tr.sel{background:#dbe4f2;box-shadow:inset 3px 0 0 var(--accent)}
+.bar{display:inline-block;width:110px;height:9px;background:#dde3ec;vertical-align:middle;margin-right:8px;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;display:block}
+.out{font:600 12px var(--sans)}
+.out.caught{color:var(--safe)} .out.missed{color:var(--fraud)} .out.alarm{color:var(--warn)} .out.clear{color:var(--muted)}
+.empty{padding:22px 8px;color:var(--muted)}
+.big{font:600 54px/1 var(--serif)}
+.decision{font:600 14px var(--mono);padding:2px 8px;border-radius:2px;color:#fff;vertical-align:middle}
+.flag{background:var(--fraud)} .approve{background:var(--safe)}
+.kv{display:flex;flex-wrap:wrap;gap:4px 18px;font:13px var(--mono);color:var(--muted);margin:8px 0 12px}
+.reason{display:grid;grid-template-columns:minmax(0,1fr) 130px;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid #dde3ec;font-size:14px}
+.reason small{display:block;color:var(--muted);font:12px var(--mono)}
+.div{position:relative;height:12px;background:linear-gradient(90deg,transparent calc(50% - .5px),var(--rule) calc(50% - .5px),var(--rule) calc(50% + .5px),transparent calc(50% + .5px))}
+.div i{position:absolute;top:1px;bottom:1px}
+.slider{width:100%;accent-color:var(--accent)}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px 14px;margin:12px 0}
+.metrics div{border-left:3px solid var(--rule);padding-left:8px}
+.metrics b{display:block;font:600 21px var(--serif)}
+.metrics span{font-size:12.5px;color:var(--muted)}
+svg{width:100%;height:auto;display:block}
+svg .grid{stroke:#d8deea;stroke-width:1}
+svg text{font:10px var(--mono);fill:var(--muted)}
+.legend{font:12px var(--mono);color:var(--muted);margin:2px 0 10px}
+.legend b{display:inline-block;width:14px;height:3px;vertical-align:middle;margin:0 5px 0 12px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-top:12px}
+.form .full{grid-column:1/-1}
+.presets{display:flex;flex-wrap:wrap;gap:8px}
+.note{font-size:13px;color:var(--muted);margin-top:6px}
+.err{color:var(--fraud);font-size:13.5px;min-height:20px}
+tr.final td{font-weight:700;background:#e3e9f2}
+td.l,th.l{text-align:left;font-family:var(--sans)}
+.imp{display:grid;grid-template-columns:150px 1fr 54px;gap:8px;align-items:center;font:13px var(--mono);padding:2px 0}
+.imp i{display:block;height:10px;background:var(--accent)}
+footer{border-top:1px solid var(--rule);padding:16px 0 30px;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .25s}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Fraud desk</h1>
+    <div class="chips" id="chips" aria-live="polite"><span>loading model...</span></div>
+  </div>
+</header>
+
+<main class="wrap">
+<div class="grid">
+
+  <div>
+    <section aria-labelledby="h-tape">
+      <h2 id="h-tape">Live transaction tape</h2>
+      <p class="sub">Each row is a held-out transaction the model never saw in training, scored by the API as it arrives. Click a row to see why it was scored that way.</p>
+      <div class="controls">
+        <button id="run" type="button">Start stream</button>
+        <button id="once" class="ghost" type="button">Score one</button>
+        <label>Speed
+          <select id="speed"><option value="1500">Slow</option><option value="700" selected>Normal</option><option value="300">Fast</option></select></label>
+        <label>Fraud share in stream
+          <select id="fshare"><option value="0.008">Realistic (0.8%)</option><option value="0.15" selected>Demo (15%)</option><option value="0.5">Stress (50%)</option></select></label>
+      </div>
+      <div class="tally" id="tally" aria-live="polite"></div>
+      <div class="tape-wrap">
+        <table>
+          <thead><tr><th>Time</th><th>Txn</th><th>Category</th><th class="num">Amount</th><th>Risk</th><th>Decision</th><th>Outcome</th></tr></thead>
+          <tbody id="tape"></tbody>
+        </table>
+        <div class="empty" id="tape-empty">No transactions yet. Press "Start stream" or "Score one".</div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-score">
+      <h2 id="h-score">Score a transaction yourself</h2>
+      <p class="sub">Pick a scenario or edit the fields. Card, device and IP history (including links between cards) comes from the live graph the model was trained with.</p>
+      <div class="presets" id="presets"></div>
+      <div class="form" id="form">
+        <div><label for="f-card">Card ID</label><input type="text" id="f-card" value="C0001"></div>
+        <div><label for="f-cat">Merchant category</label><select id="f-cat"></select></div>
+        <div><label for="f-amount">Amount ($)</label><input type="number" id="f-amount" value="42.50" min="0.01" step="0.01"></div>
+        <div><label for="f-dist">Distance from home (km)</label><input type="number" id="f-dist" value="3" min="0" step="1"></div>
+        <div><label for="f-dev">Device ID</label><input type="text" id="f-dev" value="DH1"></div>
+        <div><label for="f-ip">IP ID</label><input type="text" id="f-ip" value="IH1"></div>
+        <div><label for="f-age">Card age (days)</label><input type="number" id="f-age" value="365" min="0" step="1"></div>
+        <div><label for="f-hour">Hour of day (UTC)</label><input type="number" id="f-hour" value="12" min="0" max="23" step="1"></div>
+        <div class="full"><label><input type="checkbox" id="f-for"> Foreign transaction</label></div>
+        <div class="full"><button type="button" id="score-btn">Score transaction</button></div>
+      </div>
+      <div class="err" id="err" role="alert"></div>
+    </section>
+  </div>
+
+  <div>
+    <section aria-labelledby="h-detail">
+      <h2 id="h-detail">Why this score</h2>
+      <div id="detail"><p class="sub">Select a transaction on the tape, or score your own, to see the reasons behind its risk score.</p></div>
+    </section>
+
+    <section aria-labelledby="h-thr">
+      <h2 id="h-thr">Threshold and business cost</h2>
+      <p class="sub">A missed fraud costs its full amount; a flagged transaction costs a manual review. Move the slider to see the trade-off on the 12,000-transaction test set.</p>
+      <label for="thr">Flag when risk score is at least <b id="thr-out"></b></label>
+      <input class="slider" type="range" id="thr" min="1" max="99" step="1" value="9">
+      <div class="controls"><button class="ghost" type="button" id="thr-reset">Use cost-optimal threshold</button></div>
+      <div class="metrics" id="metrics"></div>
+      <div class="legend"><b style="background:var(--accent)"></b>precision<b style="background:var(--safe)"></b>recall</div>
+      <div id="chart-pr"></div>
+      <div class="legend"><b style="background:var(--fraud)"></b>total cost ($)<b style="background:var(--ink)"></b>cost with no model</div>
+      <div id="chart-cost"></div>
+    </section>
+  </div>
+</div>
+
+<section aria-labelledby="h-card">
+  <h2 id="h-card">Model scorecard (test set)</h2>
+  <p class="sub" id="card-sub"></p>
+  <div class="tape-wrap"><table>
+    <thead><tr><th class="l">Model</th><th class="num">PR-AUC</th><th class="num">ROC-AUC</th><th class="num">Precision</th><th class="num">Recall</th><th class="num">Cost ($)</th></tr></thead>
+    <tbody id="cardbody"></tbody></table></div>
+  <p class="note">Precision, recall and cost are measured at each model's own threshold, chosen on the validation set to minimise cost. PR-AUC is the headline metric for rare fraud: with &lt;1% positives, ROC-AUC looks excellent even for weak models.</p>
+</section>
+
+<section aria-labelledby="h-imp">
+  <h2 id="h-imp">What drives risk overall</h2>
+  <p class="sub">Mean absolute SHAP value per feature on test transactions (log-odds units).</p>
+  <div id="imp"></div>
+</section>
+</main>
+
+<footer><div class="wrap">Demo data is synthetic (see README): card-device-IP identifiers and three fraud typologies are generated so that graph features can be demonstrated. Scores are for demonstration only.</div></footer>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = v => '$' + Math.round(v).toLocaleString('en-US');
+const money2 = v => '$' + Number(v).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const pct = v => (v == null ? 'n/a' : (100 * v).toFixed(1) + '%');
+
+const S = {curve: [], noModel: 0, optimal: 0.09, thr: 0.09, all: [], selected: null, timer: null, busy: false, reviewCost: 5};
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) {
+    let msg = r.status + ' ' + r.statusText;
+    try {
+      const j = await r.json();
+      msg = typeof j.detail === 'string' ? j.detail
+        : Array.isArray(j.detail) ? j.detail.map(d => (d.loc ? d.loc[d.loc.length - 1] + ': ' : '') + d.msg).join('; ')
+        : JSON.stringify(j.detail);
+    } catch (e) {}
+    throw new Error(msg);
+  }
+  return r.json();
+}
+function showError(e) { $('err').textContent = e ? 'Could not score: ' + e.message : ''; }
+
+/* ---------- decision logic (threshold is a slider, so decisions are recomputed client-side) ---------- */
+const flagged = it => it.result.probability >= S.thr;
+function outcome(it) {
+  const f = flagged(it);
+  if (it.label === 1) return f ? ['Fraud caught', 'caught'] : ['Fraud missed', 'missed'];
+  if (it.label === 0) return f ? ['False alarm', 'alarm'] : ['Cleared', 'clear'];
+  return ['', 'clear'];
+}
+
+/* ---------- tape ---------- */
+function hhmmss() { return new Date().toLocaleTimeString('en-GB'); }
+function renderTape() {
+  const rows = S.all.slice(-40).reverse();
+  $('tape-empty').style.display = rows.length ? 'none' : 'block';
+  $('tape').innerHTML = rows.map(it => {
+    const f = flagged(it), [otxt, ocls] = outcome(it), r = it.result.risk_score;
+    const col = f ? 'var(--fraud)' : 'var(--safe)';
+    return `<tr data-id="${esc(it.id)}" class="${S.selected && S.selected.id === it.id ? 'sel' : ''}" tabindex="0">
+      <td>${esc(it.time)}</td><td>${esc(it.tx.txn_id)}</td><td>${esc(it.tx.merchant_category)}</td>
+      <td class="num">${money2(it.tx.amount)}</td>
+      <td><span class="bar"><i style="width:${Math.max(r, 1)}%;background:${col}"></i></span>${r.toFixed(1)}</td>
+      <td><span class="decision ${f ? 'flag' : 'approve'}">${f ? 'FLAG' : 'APPROVE'}</span></td>
+      <td><span class="out ${ocls}">${otxt}</span></td></tr>`;
+  }).join('');
+  const n = S.all.length, fl = S.all.filter(flagged).length;
+  const c = S.all.filter(i => i.label === 1 && flagged(i)).length;
+  const m = S.all.filter(i => i.label === 1 && !flagged(i)).length;
+  const a = S.all.filter(i => i.label === 0 && flagged(i)).length;
+  const cost = S.all.reduce((s, i) => s + (i.label === 1 && !flagged(i) ? i.tx.amount : 0) + (i.label === 0 && flagged(i) ? S.reviewCost : 0), 0);
+  $('tally').innerHTML = `<span>scored <b>${n}</b></span><span>flagged <b>${fl}</b></span><span>caught <b style="color:var(--safe)">${c}</b></span>` +
+    `<span>missed <b style="color:var(--fraud)">${m}</b></span><span>false alarms <b style="color:var(--warn)">${a}</b></span><span>cost so far <b>${money(cost)}</b></span>`;
+}
+$('tape').addEventListener('click', e => { const tr = e.target.closest('tr'); if (tr) select(tr.dataset.id); });
+$('tape').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr'); if (tr) select(tr.dataset.id); } });
+function select(id) { const it = S.all.find(i => i.id === id); if (it) { S.selected = it; renderTape(); renderDetail(); } }
+
+/* ---------- explanation panel ---------- */
+function renderDetail() {
+  const it = S.selected; if (!it) return;
+  const r = it.result, f = flagged(it);
+  const mx = Math.max(0.01, ...r.reasons.map(x => Math.abs(x.shap)));
+  const reasons = r.reasons.map(x => {
+    const w = 50 * Math.abs(x.shap) / mx, up = x.shap > 0;
+    const style = up ? `left:50%;width:${w}%;background:var(--fraud)` : `right:50%;width:${w}%;background:var(--safe)`;
+    return `<div class="reason"><div>${esc(x.text)}<small>${up ? 'raises' : 'lowers'} risk by ${Math.abs(x.shap).toFixed(2)} log-odds</small></div>
+      <div class="div" title="${esc(x.direction)}"><i style="${style}"></i></div></div>`;
+  }).join('');
+  const truth = it.label === 1 ? 'confirmed fraud' : it.label === 0 ? 'legitimate' : 'your input';
+  $('detail').innerHTML = `
+    <div><span class="big">${r.risk_score.toFixed(1)}</span> <span class="decision ${f ? 'flag' : 'approve'}">${f ? 'FLAG' : 'APPROVE'}</span></div>
+    <div class="kv"><span>${esc(it.tx.txn_id)}</span><span>${money2(it.tx.amount)} at ${esc(it.tx.merchant_category)}</span><span>${truth}</span>
+      <span>unusualness ${r.anomaly_percentile.toFixed(0)}th pct</span><span>${r.latency_ms} ms</span></div>
+    <p class="sub" style="margin-bottom:4px">Top reasons (SHAP). Red pushes towards fraud, green towards legitimate.</p>
+    ${reasons}`;
+}
+
+/* ---------- streaming ---------- */
+async function pull() {
+  if (S.busy) return; S.busy = true;
+  try {
+    const j = await api('/api/sample?fraud_ratio=' + $('fshare').value);
+    const it = {id: j.txn_id + '-' + S.all.length, tx: j.transaction, label: j.label, result: j, time: hhmmss()};
+    S.all.push(it); if (S.all.length > 2000) S.all.shift();
+    S.selected = S.selected || it;
+    if (j.label === 1 && flagged(it)) S.selected = it;      // surface caught frauds automatically
+    renderTape(); renderDetail(); showError(null);
+  } catch (e) { stop(); showError(e); } finally { S.busy = false; }
+}
+function start() { $('run').textContent = 'Pause stream'; pull(); S.timer = setInterval(pull, +$('speed').value); }
+function stop() { clearInterval(S.timer); S.timer = null; $('run').textContent = 'Start stream'; }
+$('run').onclick = () => S.timer ? stop() : start();
+$('once').onclick = pull;
+$('speed').onchange = () => { if (S.timer) { stop(); start(); } };
+
+/* ---------- manual scoring ---------- */
+function fillForm(t) {
+  $('f-card').value = t.card_id; $('f-cat').value = t.merchant_category; $('f-amount').value = t.amount;
+  $('f-dist').value = t.dist_from_home_km; $('f-dev').value = t.device_id; $('f-ip').value = t.ip_id;
+  $('f-age').value = t.card_age_days; $('f-for').checked = !!t.is_foreign;
+  $('f-hour').value = Math.floor((t.timestamp % 86400) / 3600);
+}
+async function scoreForm() {
+  const hour = Math.min(23, Math.max(0, +$('f-hour').value || 0));
+  const day0 = Math.floor(Date.now() / 86400000) * 86400;
+  const tx = {card_id: $('f-card').value.trim(), merchant_category: $('f-cat').value, amount: +$('f-amount').value,
+    device_id: $('f-dev').value.trim(), ip_id: $('f-ip').value.trim(), is_foreign: $('f-for').checked ? 1 : 0,
+    dist_from_home_km: +$('f-dist').value || 0, card_age_days: Math.round(+$('f-age').value || 0),
+    timestamp: day0 + hour * 3600 + 600, merchant_id: 'M000'};
+  try {
+    const j = await api('/api/score', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(tx)});
+    tx.txn_id = j.txn_id;
+    const it = {id: 'manual-' + Date.now(), tx, label: null, result: j, time: hhmmss()};
+    S.all.push(it); S.selected = it; renderTape(); renderDetail(); showError(null);
+    $('h-detail').scrollIntoView({behavior: 'smooth', block: 'start'});
+  } catch (e) { showError(e); }
+}
+$('score-btn').onclick = scoreForm;
+
+/* ---------- threshold panel ---------- */
+function lineChart(el, series, o) {
+  const W = 420, H = 150, L = 40, R = 8, T = 8, B = 20;
+  const xs = x => L + (x - 1) / 98 * (W - L - R), ys = y => T + (1 - Math.min(y, o.ymax) / o.ymax) * (H - T - B);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label)}">`;
+  for (let i = 0; i <= 4; i++) { const v = o.ymax * i / 4;
+    s += `<line class="grid" x1="${L}" x2="${W - R}" y1="${ys(v)}" y2="${ys(v)}"/><text x="${L - 4}" y="${ys(v) + 3}" text-anchor="end">${o.yfmt(v)}</text>`; }
+  [1, 25, 50, 75, 99].forEach(x => { s += `<text x="${xs(x)}" y="${H - 5}" text-anchor="middle">${x}</text>`; });
+  series.forEach(se => {
+    let d = '', pen = false;
+    se.pts.forEach(([x, y]) => { if (y == null) { pen = false; return; } d += (pen ? 'L' : 'M') + xs(x).toFixed(1) + ' ' + ys(y).toFixed(1); pen = true; });
+    s += `<path d="${d}" fill="none" stroke="${se.color}" stroke-width="1.8" ${se.dash ? 'stroke-dasharray="4 3"' : ''}/>`;
+  });
+  o.marks.forEach(m => { s += `<line x1="${xs(m.x)}" x2="${xs(m.x)}" y1="${T}" y2="${H - B}" stroke="${m.color}" stroke-width="1.4" ${m.dash ? 'stroke-dasharray="3 3"' : ''}/>`; });
+  el.innerHTML = s + '</svg>';
+}
+function renderThreshold() {
+  const t = Math.round(S.thr * 100), c = S.curve[t - 1]; if (!c) return;
+  $('thr-out').textContent = t + ' / 100';
+  const save = 100 * (1 - c.cost / S.noModel);
+  $('metrics').innerHTML =
+    `<div><b>${pct(c.precision)}</b><span>precision</span></div><div><b>${pct(c.recall)}</b><span>recall</span></div>` +
+    `<div><b>${c.fn}</b><span>frauds missed</span></div><div><b>${c.fp}</b><span>false alarms</span></div>` +
+    `<div><b>${money(c.cost)}</b><span>total cost</span></div><div><b>${save.toFixed(0)}%</b><span>saved vs no model (${money(S.noModel)})</span></div>`;
+  const marks = [{x: t, color: 'var(--ink)'}, {x: Math.round(S.optimal * 100), color: 'var(--safe)', dash: true}];
+  lineChart($('chart-pr'), [
+    {pts: S.curve.map((r, i) => [i + 1, r.precision]), color: 'var(--accent)'},
+    {pts: S.curve.map((r, i) => [i + 1, r.recall]), color: 'var(--safe)'}],
+    {ymax: 1, yfmt: v => Math.round(v * 100) + '%', marks, label: 'Precision and recall against threshold'});
+  lineChart($('chart-cost'), [
+    {pts: S.curve.map((r, i) => [i + 1, r.cost]), color: 'var(--fraud)'},
+    {pts: S.curve.map((r, i) => [i + 1, S.noModel]), color: 'var(--ink)', dash: true}],
+    {ymax: S.noModel * 1.3, yfmt: v => '$' + Math.round(v / 100) / 10 + 'k', marks, label: 'Total cost against threshold'});
+  renderTape(); if (S.selected) renderDetail();
+}
+$('thr').oninput = e => { S.thr = +e.target.value / 100; renderThreshold(); };
+$('thr-reset').onclick = () => { S.thr = Math.round(S.optimal * 100) / 100; $('thr').value = Math.round(S.optimal * 100); renderThreshold(); };
+
+/* ---------- static panels ---------- */
+function renderScorecard(m) {
+  const t = m.split.test;
+  $('card-sub').textContent = `Time-based split: models trained on the first 60% of transactions, tuned on the next 20%, scored on the last 20% (${t.rows.toLocaleString()} transactions, ${t.frauds} frauds). Final model: ${m.final_model}.`;
+  $('cardbody').innerHTML = m.comparison.map(r =>
+    `<tr class="${r.model === m.final_model ? 'final' : ''}"><td class="l">${esc(r.model)}</td><td class="num">${r.pr_auc.toFixed(3)}</td><td class="num">${r.roc_auc.toFixed(3)}</td>` +
+    `<td class="num">${pct(r.precision)}</td><td class="num">${pct(r.recall)}</td><td class="num">${money(r.cost)}</td></tr>`).join('');
+}
+function renderImportance(imp) {
+  const top = imp.slice(0, 10), mx = top[0].mean_abs_shap;
+  $('imp').innerHTML = top.map(d => `<div class="imp"><span>${esc(d.feature)}</span><i style="width:${100 * d.mean_abs_shap / mx}%"></i><span>${d.mean_abs_shap.toFixed(2)}</span></div>`).join('');
+}
+function renderChips(m) {
+  const f = m.final_test;
+  $('chips').innerHTML = `<span>model <b>${esc(m.final_model)}</b></span><span>test PR-AUC <b>${f.pr_auc.toFixed(3)}</b></span>` +
+    `<span>recall <b>${pct(f.recall)}</b></span><span>precision <b>${pct(f.precision)}</b></span><span>cost saved <b>${f.savings_pct.toFixed(0)}%</b></span>`;
+}
+
+async function init() {
+  try {
+    const [m, c, imp, pre] = await Promise.all([api('/api/metrics'), api('/api/curve'), api('/api/importance'), api('/api/presets')]);
+    S.curve = c.curve; S.noModel = c.cost_without_model; S.optimal = c.threshold_optimal; S.reviewCost = c.review_cost;
+    S.thr = Math.round(S.optimal * 100) / 100; $('thr').value = Math.round(S.optimal * 100);
+    const cats = ['grocery', 'fuel', 'restaurant', 'electronics', 'travel', 'online_retail', 'entertainment', 'utilities'];
+    $('f-cat').innerHTML = cats.map(x => `<option value="${x}">${x.replace('_', ' ')}</option>`).join('');
+    $('presets').innerHTML = pre.map((p, i) => `<button class="ghost" type="button" data-i="${i}" title="${esc(p.hint)}">${esc(p.name)}</button>`).join('');
+    $('presets').onclick = e => { const b = e.target.closest('button'); if (b) { fillForm(pre[+b.dataset.i].transaction); scoreForm(); } };
+    fillForm(pre[0].transaction);
+    renderChips(m); renderScorecard(m); renderImportance(imp); renderThreshold(); renderTape();
+  } catch (e) {
+    $('chips').innerHTML = '<span>Cannot reach the API. Is "uvicorn app.main:app" running and are artifacts trained? (' + esc(e.message) + ')</span>';
+  }
+}
+init();
+</script>
+</body>
+</html>
