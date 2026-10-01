@@ -260,7 +260,7 @@ reports/                   metrics.json, model_comparison.csv, imbalance_multise
 
 ## Author
 
-**<Your Name>** · GitHub: <your-github-link> · LinkedIn: <your-linkedin-link>
+**<Your Shivam Choubey>** · GitHub: <your-github-link> · LinkedIn: <your-linkedin-link>
 
 ## License
 
